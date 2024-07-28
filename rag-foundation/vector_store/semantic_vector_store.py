@@ -76,17 +76,20 @@ class SemanticVectorStore(BaseVectorStore):
         # the query embedding with the document embeddings
         # HINT: np.dot
         "Your code here"
-        dproduct_arr = None
+        dproduct_arr = [np.dot(qembed_np, i) for i in dembed_np]
         # calculate the cosine similarity
         # by dividing the dot product by the norm
         # HINT: np.linalg.norm
         "Your code here"
-        cos_sim_arr = None
+        norm_qembed_np = np.linalg.norm(qembed_np)
+        norm_dembed_np = np.linalg.norm(dembed_np, axis = 1)
+        cos_sim_arr = dproduct_arr / (norm_dembed_np * norm_dembed_np)
 
         # get the indices of the top k similarities
         "Your code here"
-        similarities = None
-        node_ids = None
+        top_k_indices = np.argsort(cos_sim_arr)[-similarity_top_k:][::-1]
+        similarities = [cos_sim_arr[i] for i in top_k_indices]
+        node_ids = [doc_ids[i] for i in top_k_indices]
 
         return similarities, node_ids
 

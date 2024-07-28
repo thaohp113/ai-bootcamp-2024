@@ -74,11 +74,11 @@ class RAGPipeline:
         self.prompt_template = prompt_template
 
         # choose your model from groq or openai/azure
-        self.model = None
+        # self.model = None
 
         # GROQ
-        # from langchain_groq import ChatGroq
-        # self.model = ChatGroq(model="llama3-70b-8192", temperature=0)
+        from langchain_groq import ChatGroq
+        self.model = ChatGroq(model="llama3-70b-8192", temperature=0)
 
         # OpenAI
         # from langchain_openai import ChatOpenAI
@@ -108,7 +108,7 @@ class RAGPipeline:
 
 
 def main(
-    data_path: Path = Path("data/qasper-test-v0.3.json"),
+    data_path: Path = Path("qasper-test-v0.3.json"),
     output_path: Path = Path("predictions.jsonl"),
     mode: str = "sparse",
     force_index: bool = False,
