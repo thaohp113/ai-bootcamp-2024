@@ -2,11 +2,13 @@ import json
 from pathlib import Path
 
 import fire
+from typing import List
 from llama_index.core import Document
 from llama_index.core.node_parser import SentenceSplitter
 from vector_store.node import TextNode, VectorStoreQueryResult
 from vector_store.semantic_vector_store import SemanticVectorStore
 from vector_store.sparse_vector_store import SparseVectorStore
+from vector_store.hybrid_search import HybridSearch
 
 
 def prepare_data_nodes(documents: list, chunk_size: int = 200) -> list[TextNode]:
@@ -58,18 +60,23 @@ def prepare_vector_store(documents: list, mode: str, force_index=False, chunk_si
             saved_file="data/dense.csv",
             force_index=force_index,
         )
+    
+    elif mode == "hybrid":
+        vector_store = HybridSearch().get_vector_store()
     else:
-        raise ValueError("Invalid mode. Choose either `sparse` or `semantic`.")
+        raise ValueError("Invalid mode. Choose either `sparse`, `semantic` or `hybrid`.")
 
     if force_index:
         nodes = prepare_data_nodes(documents=documents, chunk_size=chunk_size)
-        vector_store.add(nodes)
+        
+        for i in vector_store:
+            i.add(nodes)
 
     return vector_store
 
 
 class RAGPipeline:
-    def __init__(self, vector_store: SemanticVectorStore, prompt_template: str):
+    def __init__(self, vector_store: List[SemanticVectorStore], prompt_template: str):
         self.vector_store = vector_store
         self.prompt_template = prompt_template
 
@@ -85,7 +92,12 @@ class RAGPipeline:
         # self.model = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
 
     def retrieve(self, query: str, top_k: int = 5) -> VectorStoreQueryResult:
-        query_result = self.vector_store.query(query, top_k=top_k)
+        # query_result = self.vector_store.query(query, top_k=top_k)
+        if len(self.vector_store) == 1:
+            query_result = self.vector_store[0].query(query, top_k=top_k)
+        else:
+            queries = [i.query(query, top_k=top_k) for i in self.vector_store]
+            query_result = HybridSearch.combine_search_results(queries, top_k)
         return query_result
 
     def answer(self, query: str, top_k: int = 5) -> tuple[str, list[str]]:
